@@ -1,0 +1,12 @@
+source "${1}"
+
+source ./tty-functions
+
+# Set lower baud rate to keep the machines on the loop from getting too excited
+if [[ "${BAUD}" -lt 300 ]]; then
+	stty -F "${TTY}" ispeed 300 ospeed 300 ixon -ignpar -icrnl -ocrnl -onlcr -inlcr -onocr -onlret -echo
+else
+	stty -F "${TTY}" ispeed "${BAUD}" ospeed "${BAUD}" ixon -ignpar -icrnl -ocrnl -onlcr -inlcr -onocr -onlret -echo
+fi
+
+IFS=

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<rss version='2.0' xmlns:dc='http://purl.org/dc/elements/1.1/'> 
+     <channel>
+<title>Weather at Provo, Provo Municipal Airport, UT - via NOAA's National Weather Service</title>
+<link>http://www.weather.gov/xml/current_obs/</link>
+     <lastBuildDate>Sun, 02 Sep 2018 22:56:00 -0600</lastBuildDate>
+     <ttl>60</ttl>
+     <description>Weather conditions from NOAA's National Weather Service. </description>
+     <language>en-us</language>
+     <managingEditor>robert.bunge@noaa.gov</managingEditor>
+     <webMaster>w-nws.webmaster@noaa.gov</webMaster>
+     <image>
+     <url>http://www.weather.gov/images/xml_logo.gif</url>
+     <title>NOAA - National Weather Service</title>
+     <link>http://www.weather.gov/xml/current_obs/</link>
+     </image> 
+    
+     <item>
+<title>
+Fair and 63 F at Provo, Provo Municipal Airport, UT</title>
+<link>http://weather.noaa.gov/weather/current/KPVU.html</link> 
+<description>
+<![CDATA[<img src="http://forecast.weather.gov/images/wtf/small/nskc.png" class="noaaWeatherIcon"  width="55" height="58" alt="Fair" style="float:left;" /><br />]]>
+Winds are Calm. The pressure is 1012.0 mb and the humidity is 56%.
+ Last Updated on Sep 2 2018, 10:56 pm MDT.  
+      </description>
+      <guid isPermaLink="false">Sun, 02 Sep 2018 22:56:00 -0600</guid>
+      </item>
+      </channel>
+      </rss>

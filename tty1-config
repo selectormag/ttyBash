@@ -1,0 +1,95 @@
+### System settings ###
+
+TTYUSER='teletype'
+
+### Email settings ###
+
+FROM='FROMNAME'
+FROMADDR='FROM@DOMAIN.NET'
+SMTPSRV='SMTP.DOMAIN.NET'
+SMTP_PORT='993'
+SMTPUSR='FROM@DOMAIN.NET'
+SMTP_PASS='PASSWD'
+
+### SMS (Bandwidth) Settings ###
+
+FROMNUM='0009112321'
+USERID='BANDWIDTHID'
+TOKEN='BANDWIDTHTOKEN'
+SECRET='BANDWIDTHSECRET'
+
+### RTTY Broadcast Settings ###
+
+BCASTHOST='BCASTHOST'
+BCASTUSER='user'
+BCASTKEY='/home/teletype/.ssh/id_ttybcast'
+FLDIGIPORT='7362'
+VIDSTREAM='default:0'
+FRAMERATE='30.000030'
+YOUTUBEKEY='KEYHERE'
+REMOTE_FLDIGIPATH='/Applications/fldigi-4.0.16.app/Contents/MacOS/fldigi'
+REMOTE_FFMPEGPATH='/usr/local/bin/ffmpeg'
+REMOTE_BUTTPATH='/Applications/butt.app/Contents/MacOS/butt'
+
+### Telegraph Relay Settings ###
+
+USETG='FALSE'
+TGHOST='HOST'
+TGUSER='pi'
+TGKEY='/home/teletype/.ssh/id_ttytg'
+TGPORT='1837'
+
+### External TCP Communications Settings ###
+
+USETCP='FALSE'
+TCPPORT='1930'
+TCPHOST='HOST'
+TCPMAXCON='40'
+TCPWRU='Teletype.net -- Model 15 Teletype'
+TCPWELCOME="You are connected to: ${TCPWRU}"
+TCPTIMEOUT=120
+SENDMAIL='FALSE'
+SENDSMS='TRUE'
+
+### i-Telex communications ###
+
+USEIT='TRUE'
+ITNUMBER='01234567'
+ITPORT='1960'
+ITCENTRAL='i-telex.net'
+
+### Interface settings ###
+
+### SSH settings ###
+
+PUBKEYSPATH='./pubkeys/'
+
+BAUD='45'
+TTY='/dev/tty-int1'
+
+### Characterset settings ###
+
+TERMCH='NNNN'
+LTRSCHAR='{'
+FIGSCHAR='}'
+WIDTH='72'
+
+### Meta settings ###
+
+TTYNAME='tty1'
+DEBUG='TRUE'
+USEEMAIL='TRUE'
+USESMS='FALSE'
+USERSS='FALSE'
+MAXIDLE=30
+LOOPIDLE=2
+
+### GPIO pin settings ###
+
+LOOPPIN=19
+LOOPPSU=13
+MOTORPIN=6
+CONTROLOUT1=12
+CONTROLIN1=16
+CONTROLOUT2=20
+CONTROLIN2=21

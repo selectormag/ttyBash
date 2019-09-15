@@ -1,0 +1,320 @@
+# Function to remove any feedback from the loop from the previous output
+# Specifically designed for use before prompts requiring precise absorption of 
+# previous output so as to not contaminate the prompt.
+#
+# TODO: Make a formula that calculates the required wait time depending on the
+# specified baud rate (e.g. 45, 60, 75, 100, 110, &c)
+
+# Function to ensure machine is in LTRS shift
+function ltrs () {
+	printf "%s" "${LTRSCHAR}" > "${TTY}"
+}
+
+# Function to ensure machine is in FIGS shift
+function figs () {
+	printf "%s" "${FIGSCHAR}" > "${TTY}"
+}
+
+# Function to enter board configuration menu and configure CRLF
+function autocrlf () {
+	echo "%" > "${TTY}"
+	if [[ "${1}" == "on" ]]; then
+		echo "crlf" > "${TTY}"
+	elif [[ "${1}" == "off" ]]; then
+		echo "nocrlf" > "${TTY}"
+	else
+		echo "You didn't select a valid option. USAGE: autocrlf [on|off]"
+	fi
+	echo "exit" > "${TTY}"
+}
+
+# Function to strip out carriage returns from prompt inputs
+function rmcr () {
+	declare RMCR=${*:-$(</dev/stdin)}
+	printf "%s" "${RMCR}" | sed 's///g'
+}
+
+# Function to strip out newlines from prompt inputs
+function rmlf () {
+	declare RMLF=${*:-$(</dev/stdin)}
+	printf "%s" "${RMLF}" | tr -d '\n'
+}
+
+function absorb () {
+        printf "${1}" > "${TTY}"
+        #TMPIFS="${IFS}"
+        #IFS=
+        EXSTR=""
+        CONTINUE="FALSE"
+	ROUND=1
+        while [[ "${CONTINUE}" == "FALSE" ]]; do
+                read -n 1 -t 1 CHAR < "${TTY}"
+                debugprint "Char: ${CHAR}|"
+                EXSTR+="${CHAR}"
+                debugprint "Extr: ${EXSTR}|"
+                NUMCHAR=$(printf "${EXSTR}" | wc -m)
+                debugprint "Numchar: ${NUMCHAR}"
+                CHKSTR=$(printf "${1}" | tail -c "${NUMCHAR}")
+                debugprint "Chkstr: ${CHKSTR}|"
+                ISDONE=$(printf "${CHKSTR}" | grep -i "${EXSTR}")
+		if [[ -n "${ISDONE}" ]]; then
+                        CONTINUE="TRUE"
+                fi
+		((ROUND++))
+		if [[ "${ROUND}" -gt "${WIDTH}" ]]; then
+			# We've clearly gotten stuck. Exit with an error
+			figs
+			absorb "ERROR: loop feedback. Start over."
+			printf "\n" > "${TTY}"
+			exit 1
+		fi
+        done
+        #IFS="${TMPIFS}"
+}
+
+# Function to enable debug log
+function debugprint () {
+        if [[ "${DEBUG}" == "TRUE" ]]; then
+                echo "DEBUG: ${1}" >> "${TTYNAME}".log
+        fi
+}
+
+# Function to slow down output of lines since interface can't buffer too large swaths of text
+# (stty ixon command was supposed to fix this using ixon, and it did... for a little while. Then it bloke.
+# The interface only seems to be able to buffer around four lines of text now.
+# Rather than trace the ghost in the system any farther, I concocted this).
+# Specifically designed for less-precise use when printing large chunks of text without a prompt.
+function sflow () {
+	function sflprint () {
+		WAITTIME=$(echo "${1} / 1 * .012" | bc)  # Timed this, and it is about the amount of characters $
+		if [[ "${3}" == "TRUE" ]]; then
+			# Got the flag NOT to add a newline to this one; send to loop without newline
+			debugprint "Got CR flag; swapping newline for CR"
+			printf "%s\x0" "${2}" > "${TTY}" # Send to loop WITH extra NULL character to ensure carriage has enought time to return
+			# TRUE flag also lets us know we need a little extra wait time before starting the new line since sometimes the next character is sent WHILE the carriage return is taking place
+			#WAITTIME=$(echo "${WAITTIME} * 1.5" | bc
+		else
+			# Okay to send a newline at the end of this one
+                	printf "%s\n" "${2}" > "${TTY}" # Send to loop
+		fi
+                #if [[ "${TGENABLED}" == "TRUE" ]]; then
+                        # Sending received text to remote telegraph simultaneously as it's printed is enabled; establ$
+
+                #fi
+                debugprint "Line ${LINENUM}: ${2}"
+                sleep "${WAITTIME}" # Wait approximate amount of time until sending next line so as to not overwhelm $
+	}
+	# Determine number of lines in given file
+	NUMLINES=$(cat "${1}" | wc -l)
+	# Process each line, one at a time
+	LINENUM=1
+	while [[ ${LINENUM} -le ${NUMLINES} ]]; do
+		# Get line
+		LINE=$(tail -n+"${LINENUM}" "${1}" | head -n1)
+		# Determine length of line
+		LENGTH=$(printf "%s" "${LINE}" | sed 's///' | wc -m) # Exclude first found CR from count
+		# If line length is greater than WIDTH, split it up-- this is certainly because it's a TTY art with multiple overstrike lines
+		if [[ "${LENGTH}" -gt "${WIDTH}" ]]; then
+			debugprint "Line length of ${LENGTH} greater than ${WIDTH}. Assuming line has multiple carriage returns; splitting into sections so interface can handle it."
+			# Calculate how many splits should be done (divide length by 80 and round to next integer)
+			#LINESPLIT=$(echo "if (${LENGTH}%80) ${LENGTH}/80+1 else ${LENGTH}/80" | bc)
+			# Calculate how many splits should be done (count number of carriage returns in this line)
+			LINESPLIT=$(printf "%s" "${LINE}" | awk -F"" '{print NF-1}')
+			#((LINESPLIT--))
+			SPLITNUM=1
+			debugprint "Line to be split into ${LINESPLIT} sections."
+			# Print sections
+			while [[ "${LINESPLIT}" -ge "${SPLITNUM}" ]]; do
+				#printf "%s" "${LINE}" | sed 's/^M.*//'
+				#END=$(echo "${SPLITNUM} * 80" | bc) 
+				#BEG=$(echo "${END} - 79" | bc)
+				#NLINE=$(printf "%s" "${LINE}" | cut -c "${BEG}"-"${END}")
+				NLINE=$(printf "%s" "${LINE}" | cut -d '' -f "${SPLITNUM}")
+				NLENGTH=$(printf "%s" "${NLINE}" | wc -m)
+				debugprint "Printing section ${SPLITNUM} with length of ${NLENGTH}"
+				if [[ "${SPLITNUM}" -lt "${LINESPLIT}" ]]; then
+					# Set CR-help flag to TRUE so that newline at end of line is replaced with NUL character
+					CRFLAG='TRUE'
+				else
+					CRFLAG='FALSE'
+				fi
+				sflprint "${NLENGTH}" "${NLINE}" "${CRFLAG}"
+				((SPLITNUM++))
+			done
+		else
+			# Nothing special here-- just print the line
+			sflprint "${LENGTH}" "${LINE}"
+		fi
+		((LINENUM++))
+	done
+}
+
+# Function to translate from teletype-only codes to  special ASCII characters; also strips out carriage returns
+# :AT: = @, :PND: = #, :PCNT: = %, :CRT: = ^, :STAR: = *, :UND: = _, :PLS: = +, :EQL: = =, :LBRC: = {, :RBRC: = }, :LBRK: = [, :RBRK: = ], :BKSL: = \, :PIPE: = |, :TILD: = ~, :BTIK: = `, :LTHN: = <, :GTHN: = >
+function chartoascii () {
+	declare TOASCII=${*:-$(</dev/stdin)}
+	printf "%s" "${TOASCII}" | sed 's/:AT:/@/g;s/:PND:/#/g;s/:PCNT:/%/g;s/:CRT:/\^/g;s/:STAR:/\*/g;s/:UND:/_/g;s/:PLS:/+/g;s/:EQL:/=/g;s/:LBRC:/{/g;s/:RBRC:/}/g;s/:LBRK:/\[/g;s/:RBRK:/\]/g;s/:BKSL:/\\/g;s/:PIPE:/|/g;s/:TILD:/~/g;s/:BTIK:/`/g;s/:LTHN:/</g;s/:GTHN:/>/g;s///g'
+}
+
+# Function to translate from special ASCII characters to teletype-only codes
+# For the more human readable translation, see the comment above the chartoascii function
+function chartotty () {
+	declare TOTTY=${*:-$(</dev/stdin)}
+	printf "%s" "${TOTTY}" | sed 's/@/:AT:/g;s/#/:PND:/g;s/%/:PCNT:/g;s/\^/:CRT:/g;s/\*/:STAR:/g;s/_/:UND:/g;s/+/:PLS:/g;s/=/:EQL:/g;s/{/:LBRC:/g;s/}/:RBRC:/g;s/\[/:LBRK:/g;s/\]/:RBRK:/g;s/\\/:BKSL:/g;s/|/:PIPE:/g;s/~/:TILD:/g;s/`/:BTIK:/g;s/</:LTHN:/g;s/>/:GTHN:/g'
+}
+
+# Function to transform text into lowercase (to be shell-friendly) and uppercase specified characters
+# The awk command converts everything to lowercase
+# The first sed command converts just the UPR and LWR flags back to uppercase
+#  The second sed command converts anything found between UPR and LWR flags to uppercase
+#  The final sed command removes the UPR and LWR flags
+function sshize () {
+	declare SSHIZE=${*:-$(</dev/stdin)}
+	printf "%s" "${SSHIZE}" | awk '{print tolower($0)}' | sed 's/:lwr:/:LWR:/g; s/:upr:/:UPR:/g' | sed -r 's/:UPR:[][a-z 0-9\!\(\)?:;.,\x027"@#%$&_^*_+={}\|~`<>-]+:LWR:/\U&/g' | sed 's/:UPR://g;s/:LWR://g'
+}
+
+# Function to transform text from the shell to specify whether characters are upper or lowercase in a 5-bit (caps only) charset
+# The first sed command adds the UPR and LWR flags to all strings of 1+ length containing caps, nums, spaces, and/or special chars
+# Since the first sed command flags strings that contain spaces/nums/special chars but that don't contain caps, this second sed command removes the flags of those strings that do not have caps
+function desshize () {
+	declare DESSHIZE=${*:-$(</dev/stdin)}
+	printf "%s" "${DESSHIZE}" | sed -r 's/[][A-Z 0-9\!\(\)?:;.,\x027"@#%$&_^*_+={}\|~`<>-]+/:UPR:&:LWR:/g' | sed -r 's/:UPR:([][ 0-9\!\(\)?:;.,\x027"@#%$&_^*_+={}\|~`<>-]+):LWR:/\1/g' 
+}
+
+# Function to "press" multiple single-spaced lines to a single line, usually caused by email (this removes only single newlines whilst retaining double newlines)
+# Taken directly from https://stackoverflow.com/a/5751555/2012055
+function linepress () {
+	declare IN=${*:-$(</dev/stdin)}
+	printf "%s" "${IN}" | sed -n -e '1{${p;b};h;b};/^$/!{H;$!b};x;s/\(.\)\n/\1 /g;p'
+}
+
+function bell () {
+	if [[ -z "${1}" ]] || ! [[ "${1}" =~ ^[0-9]+$ ]]; then
+		# Supplied input is not a whole number or is null. Assuming single bell.
+		printf "\a" > "${TTY}"
+	else
+		# Ring TTY bell x times
+		BELLNUM=0
+		while [[ BELLNUM -lt "${1}" ]]; do
+			printf "\a" > "${TTY}"
+			((BELLNUM++))
+		done
+	fi
+}
+
+# Function to initialize teletype GPIO pins
+function gpioinit {
+	echo "This function has not yet been created. Please try again at another time."
+}
+
+# Function to turn on/off loop PSU
+# Ensures PSU is not turned off if another TTY is currently using it
+function psuctl {
+        # Initialize pins if not already initialized
+        gpio -g mode "${LOOPPSU}" out
+
+        # Parse parameters
+        case "${2}" in
+                on)
+                        debugprint "Received trigger to turn on PSU. Turning on if not already on."
+                        gpio -g write "${LOOPPSU}" 1
+                        touch /dev/shm/psu"${1}".pid
+                ;;
+                off)
+                        debugprint "Received trigger to turn off PSU. Checking to verify the other tty loops aren't using the PSU."
+                        rm -vf /dev/shm/psu"${1}".pid
+                        PIDEXISTS=$(ls /dev/shm/psutty*.pid 2> /dev/null)
+                        if [[ -n "${PIDEXISTS}" ]]; then
+                                # File exists, which means PSU is still in use. Do NOT turn PSU off
+                                debugprint "PSU still in use by another TTY. Not turning off PSU."
+                        else
+                                # No file exists
+                                debugprint "PSU not in use by another TTY. Turning off PSU."
+                                gpio -g  write "${LOOPPSU}" 0
+                        fi
+                ;;
+		*)
+			echo "ERROR: loop parameter not recognized. Cannot proceed."
+			return
+		;;
+        esac
+}
+
+
+# Function to turn on/off specified motor and loop (usage: ttyctl tty1 on) 
+function ttyctl {
+
+	# Parsing parameters
+	# TODO: Remove hardwired tty1/tty2/motor1/etc.-- this all needs to be based on the TTYNAME variable-- probably get rid of case statement and GPIO pins' variables named per tty. They could simply all be pulled from single variables from the config file
+#	case "${1}" in
+#		tty1)
+#			debugprint "TTY 1 selected. Initializing..."
+#			LOOPPIN="${LOOP1}"
+#			MOTORPIN="${MOTOR1}"
+#		;;
+#		tty2)
+#			debugprint "TTY 2 selected. Initializing..."
+#			LOOPPIN="${LOOP2}"
+#			MOTORPIN="${MOTOR2}"
+#		;;
+#		*)
+#			echo "ERROR: loop not recognized. Cannot proceed."
+#			return
+#		;;
+#	esac
+
+	
+
+	debugprint "Loop pin is ${LOOPPIN}"
+	debugprint "Motor pin is ${MOTORPIN}"
+        # Initialize pins if not already initialized
+        gpio -g mode "${LOOPPIN}" out
+        gpio -g mode "${MOTORPIN}" out
+	case "${1}" in
+		on)
+			debugprint "Turning power supply on (if needed), and turning on loop and motor."
+			psuctl "${TTYNAME}" on
+			gpio -g write "${LOOPPIN}" 1
+			sleep .5
+			gpio -g write "${MOTORPIN}" 1
+			touch /dev/shm/"${TTYNAME}".poweron
+			sleep 1.5
+		;;
+		off)
+			debugprint "Turning off power supply (if possible), and turning off loop and motor."
+			gpio -g write "${MOTORPIN}" 0
+			sleep 1.5
+			gpio -g write "${LOOPPIN}" 0
+			psuctl "${TTYNAME}" off
+			rm -vf /dev/shm/"${TTYNAME}".poweron
+		;;
+		*)
+			echo "ERROR: selection not recognized. Cannot proceed."
+			return
+		;;
+	esac	  
+}
+
+function ttyinit {
+	# Check to see if printer is being actively used; if so, go into wait loop until printer is free; if not, turn on tty and allow message to be printed
+	if [[ -f /dev/shm/"${TTYNAME}".inuse ]]; then
+		debugprint "Printer ${TTYNAME} is in active use. Waiting in line to print this message..."
+		INUSE='TRUE'
+		while [[ "${INUSE}" == "TRUE" ]]; do
+			if [[ ! -f /dev/shm/"${TTYNAME}".inuse ]]; then
+				debugprint "Printer ${TTYNAME} is no longer in use. Printing message..."
+				INUSE='FALSE'
+				break
+			fi
+		done
+	fi
+	# Time to turn on printer
+	touch /dev/shm/"${TTYNAME}".inuse
+	ttyctl on
+}
+
+function ttyuninit {
+	# Prepare the teletype for shutting down by simply removing the file marking it as in use; tty-main.sh should handle all tty stops
+	touch /dev/shm/"${TTYNAME}".poweron
+	rm -vf /dev/shm/"${TTYNAME}".inuse
+}

@@ -4,29 +4,38 @@ TTYUSER='teletype'
 
 ### Email settings ###
 
-FROM='FROMNAME'
-FROMADDR='FROM@DOMAIN.NET'
-SMTPSRV='SMTP.DOMAIN.NET'
-SMTP_PORT='993'
-SMTPUSR='FROM@DOMAIN.NET'
-SMTP_PASS='PASSWD'
+FROM='ttyBash Teletype'
+FROMADDR=''
+SMTPSRV=''
+SMTP_PORT='465'
+SMTPUSR=''
+SMTP_PASS=''
 
-### SMS (Bandwidth) Settings ###
+### SMS (Twilio) Settings ###
 
-FROMNUM='0009112321'
-USERID='BANDWIDTHID'
-TOKEN='BANDWIDTHTOKEN'
-SECRET='BANDWIDTHSECRET'
+TWIFROMNUM=''
+TWIUSERID=''
+TWISECRET=''
+
+### ART Settings ###
+
+USEARTMSG='TRUE'
+ARTMSG="Printed by ttyBash Teletype"
+
+### R/ITTY fldigi Receive Settings ###
+
+ITTY_HOST=''
+ITTY_PORT='7362'
 
 ### RTTY Broadcast Settings ###
 
-BCASTHOST='BCASTHOST'
-BCASTUSER='user'
-BCASTKEY='/home/teletype/.ssh/id_ttybcast'
+BCASTHOST=''
+BCASTUSER=''
+BCASTKEY=''
 FLDIGIPORT='7362'
 VIDSTREAM='default:0'
 FRAMERATE='30.000030'
-YOUTUBEKEY='KEYHERE'
+YOUTUBEKEY=''
 REMOTE_FLDIGIPATH='/Applications/fldigi-4.0.16.app/Contents/MacOS/fldigi'
 REMOTE_FFMPEGPATH='/usr/local/bin/ffmpeg'
 REMOTE_BUTTPATH='/Applications/butt.app/Contents/MacOS/butt'
@@ -34,18 +43,18 @@ REMOTE_BUTTPATH='/Applications/butt.app/Contents/MacOS/butt'
 ### Telegraph Relay Settings ###
 
 USETG='FALSE'
-TGHOST='HOST'
+TGHOST=''
 TGUSER='pi'
-TGKEY='/home/teletype/.ssh/id_ttytg'
+TGKEY=''
 TGPORT='1837'
 
 ### External TCP Communications Settings ###
 
 USETCP='FALSE'
 TCPPORT='1930'
-TCPHOST='HOST'
+TCPHOST=''
 TCPMAXCON='40'
-TCPWRU='Teletype.net -- Model 15 Teletype'
+TCPWRU='ttyBash Teletype'
 TCPWELCOME="You are connected to: ${TCPWRU}"
 TCPTIMEOUT=120
 SENDMAIL='FALSE'
@@ -70,19 +79,26 @@ TTY='/dev/tty-int1'
 ### Characterset settings ###
 
 TERMCH='NNNN'
-LTRSCHAR='{'
-FIGSCHAR='}'
+LTRSCHAR="\x1F"
+FIGSCHAR="\x1E"
 WIDTH='72'
 
 ### Meta settings ###
 
 TTYNAME='tty1'
 DEBUG='TRUE'
-USEEMAIL='TRUE'
-USESMS='FALSE'
+USEEMAIL='FALSE'
+USESMS='TRUE'
 USERSS='FALSE'
-MAXIDLE=30
+USEITTY='FALSE'
+### TODO: Add 60 seconds to MAXIDLE when USEITTY is enabled
+AUTOCFG="\x16"
+MAXIDLE=35
 LOOPIDLE=2
+SMSBELL=3
+EMAILBELL=3
+ARTBELL=4
+OBFUSCATE='TRUE'
 
 ### GPIO pin settings ###
 

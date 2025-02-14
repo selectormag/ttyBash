@@ -7,17 +7,17 @@
 
 # Function to ensure machine is in LTRS shift
 function ltrs () {
-	printf "%s" "${LTRSCHAR}" > "${TTY}"
+	printf "${LTRSCHAR}" > "${TTY}"
 }
 
 # Function to ensure machine is in FIGS shift
 function figs () {
-	printf "%s" "${FIGSCHAR}" > "${TTY}"
+	printf "${FIGSCHAR}" > "${TTY}"
 }
 
 # Function to enter board configuration menu and configure CRLF
 function autocrlf () {
-	echo "%" > "${TTY}"
+	printf "${AUTOCFG}" > "${TTY}"
 	if [[ "${1}" == "on" ]]; then
 		echo "crlf" > "${TTY}"
 	elif [[ "${1}" == "off" ]]; then
@@ -317,4 +317,13 @@ function ttyuninit {
 	# Prepare the teletype for shutting down by simply removing the file marking it as in use; tty-main.sh should handle all tty stops
 	touch /dev/shm/"${TTYNAME}".poweron
 	rm -vf /dev/shm/"${TTYNAME}".inuse
+}
+
+display_center() {
+	# Built off of https://superuser.com/questions/823883/how-to-justify-and-center-text-in-bash
+	declare CCONTENT=${*:-$(</dev/stdin)}
+	echo "${CCONTENT}" | fold -s -w "${WIDTH}"  > /dev/shm/center-"${TTYNAME}".tmp
+	while IFS= read -r LINE; do
+	printf "%*s\n" $(( (${#LINE} + "${WIDTH}") / 2)) "$LINE"
+	done < /dev/shm/center-"${TTYNAME}".tmp
 }

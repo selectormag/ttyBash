@@ -88,7 +88,8 @@ sleep 1 # For theatrics
 
 # It would be more efficient to use sendMultiple call, but too late
 echo "${RECIPLIST}" | while read RECIPIENT; do
-	curl -v -X POST https://api.catapult.inetwork.com/v1/users/"${USERID}"/messages -u "${TOKEN}":"${SECRET}" -H "Content-type: application/json" -d '{ "from": "'"${FROMNUM}"'", "to": "'"${RECIPIENT}"'", "text": "'"${MSG}"'" }'
+	curl -s "https://api.twilio.com/2010-04-01/Accounts/${TWIUSERID}/Messages.json" --data-urlencode "Body=${MSG}" --data-urlencode "From=${TWIFROMNUM}" --data-urlencode "To=${RECIPIENT}" -u "${TWIUSERID}":"${TWISECRET}"
+	# Would be good to validate the response here to ensure it actually sent instead of blindly trusting, but putting it off
 done
 
 absorb " Sent!"

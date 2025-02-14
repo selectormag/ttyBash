@@ -41,7 +41,7 @@ while [[ "${CONTINUE}" == "FALSE" ]]; do
 	                ./tty-sms-send.sh "${CONFIGFILE}"
 			continue
 	        elif [[ "${LINE}" == *'ART'* ]]; then
-	                ARTSEL=$(printf "%s" "${LINE}" | cut -d " " -f 3)
+	                ARTSEL=$(printf "%s" "${LINE}" | tr -s " " | cut -d " " -f 3)
 			if [[ -z "${ARTSEL}" ]]; then
 				ARTSEL=$(printf "%s" "${LINE}" | cut -d " " -f 2)
 			fi
@@ -55,7 +55,14 @@ while [[ "${CONTINUE}" == "FALSE" ]]; do
 			continue
 		elif [[ "${LINE}" == *'EXIT' ]]; then
 			ttyctl "${TTYNAME}" off
-	        else
+		elif [[ "${LINE}" == *'WRITE' ]]; then
+			./tty-write.sh "${CONFIGFILE}"
+		elif [[ "${LINE}" == *'ITTY' ]]; then
+			./tty-itty-receive.sh "${CONFIGFILE}"
+		elif [[ "${LINE}" == *2* ]]; then
+			bell 10
+			./tty-fileprint.sh "${CONFIGFILE}" ./fooky.fooky
+		else
 	        	# Command from TTY didn't match any commands
 	                debugprint "Command does not match existing commands."
 			ltrs

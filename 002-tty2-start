@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./tty-init.sh ./tty2-config ./tty2.log >> ./tty2.log 2>&1

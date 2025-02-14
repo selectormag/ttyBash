@@ -187,22 +187,37 @@ sub help
     }
 }
 
-sub recv_text
+sub recv_data
 {
-    my ($r, $len, $start, $cont) = (0, 0, 0, 1);
-    my ($delay) = (@_ ? @_ : 1);
+    my ($r, $cont) = (0, 1);
+    my ($delay) = (@_ ? @_ : 1000000);
     my $sigint = $SIG{INT};
     $SIG{INT} = sub { $cont = 0; };
 
     while ($cont) {
-	sleep($delay);
-
-	next unless defined($r = req("text.get_rx_length"));
-	$start -= $len - $r->value if ($r->value < $len);
-	$len = $r->value;
-	next unless ($len - $start > 0 && defined($r = req("text.get_rx", $start, $len - $start)));
+	usleep($delay);
+	my $r = req("rx.get_data");
 	print STDOUT $r->value;
-	$start = $len;
+    }
+    $SIG{INT} = $sigint;
+}
+
+sub recv_text
+{
+    my ($r, $len, $start, $cont) = (0, 0, 0, 1);
+    my ($delay) = (@_ ? @_ : 1000000);
+    my $sigint = $SIG{INT};
+    $SIG{INT} = sub { $cont = 0; };
+
+    while ($cont) {
+        usleep($delay);
+
+        next unless defined($r = req("text.get_rx_length"));
+        $start -= $len - $r->value if ($r->value < $len);
+        $len = $r->value;
+        next unless ($len - $start > 0 && defined($r = req("text.get_rx", $start, $len - $start)));
+        print STDOUT $r->value;
+        $start = $len;
     }
     print "\n";
     $SIG{INT} = $sigint;
@@ -346,7 +361,8 @@ sub pskrep_qsy
     "help"      => [ "n:n", "Print this command help", \&help ],
     "history"   => [ "s:n", "Print command history", sub { print_history($OUT, 0); } ],
     "modems"    => [ "s:n", "List all modem names", \&list_modem_names ],
-    "poll"      => [ "s:i", "Poll for new received text every ``i'' seconds (def=1)", \&recv_text ],
+    "poll"      => [ "s:i", "Poll for new received text every ``i'' microseconds (def=1000000, or 1 second)", \&recv_text ],
+    "polldata"	=> [ "s:i", "Poll for new received DATA every ``i'' seconds (def=1000000, or 1 second) -- differs from poll in that ALL raw bytes are relayed including BEL, CR, LF, and so forth. Plain poll does NOT send invisible characters", \&recv_data ],
     "pskrqsy"   => [ "n:si", "QSY to ``i''th best frequency for grid ``s''", \&pskrep_qsy ],
     "recvtext"  => [ "s:n", "Get all received text", \&get_recv_text ],
     "reinit"    => [ "n:n", "Rebuild command list", sub { build_cmds(); setup_compl(); } ],

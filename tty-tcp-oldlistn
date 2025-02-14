@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Typically called by the tcpserver command in tty-tcp-init.sh
+# Doesn't really do the job of listening so much as acting on a connection made by the listener,
+# but it's named this way to fit more standard nomenclature in this project
+
+# Connection established; verify if any headers are being sent
+
+debugprint "Connection established"
+
+# No headers received, so we can assume this is a basic telnet-like connection (no automated client at the other end, plaintext only)
+
+# Proper headers received; acking
+
+# Verify whether communications should be encrypted and how
+
+# Encrypted via Enigma
+
+# Encrypted via RSA
+
+# Encrypted via PGP
+
+# Not encrypted; pass plaintext along
+
+# Loop to receive and suppress characters and send characters; conversation is sent to tmp file and parsed for EOM signal and other automation commands

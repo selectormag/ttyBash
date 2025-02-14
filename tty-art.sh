@@ -22,8 +22,7 @@ debugprint "ARTSEARCH is ${ARTSEARCH}|"
 
 if [[ -z "${ARTSEARCH}" ]]; then
 	ltrs
-	absorb "Art ${2} does not exist."
-	printf "\n" > "${TTY}"
+	echo "Art ${2} does not exist." > "${TTY}"
 	sleep .5
 	# Resume loop listener
 	rm -vf /dev/shm/"${TTYNAME}".listlock
@@ -32,10 +31,18 @@ if [[ -z "${ARTSEARCH}" ]]; then
 	#exit 1
 else
 	autocrlf off
+	ltrs
+	printf "\n\n\n" > "${TTY}"
 	sflow "./art/${ARTSEARCH}"
 	autocrlf on
+	if [[ "${USEARTMSG}" == "TRUE" ]]; then
+		# Only print the closing art message if so configured
+		printf "\n\n" > "${TTY}"
+		printf $(display_center "${ARTMSG}") > "${TTY}"
+		printf "\n" > "${TTY}"
+	fi
 	printf "\n\n\n" > "${TTY}"
-	bell 3
+	bell "${ARTBELL}"
 	sleep 1
 fi
 

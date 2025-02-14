@@ -10,6 +10,16 @@ source "${1}"
 EXIT='false'
 trap 'EXIT=true' SIGUSR1
 
+if [[ "${USEITTY}" == 'TRUE' ]]; then
+	debugprint "Initializing ITTY loop..."
+	#./tty-itty-receive.sh ${1} > ./tty1.log &
+	debugprint "Initializing background fldigi-shell text stream..."
+	perl fldigi-shell -u "http://${ITTY_HOST}:${ITTY_PORT}/2/RPC2" -c text.clear_rx
+	perl fldigi-shell -u "http://${ITTY_HOST}:${ITTY_PORT}/2/RPC2" -c poll > /dev/shm/"${TTYNAME}"-itty.rx &
+	echo "${!}" > /dev/shm/"${TTYNAME}"-itty-main.pid
+	debugprint "fldigi-shell stream initialized."
+fi
+
 debugprint "Initializing main loop..."
 
 while [[ "${EXIT}" != "true" ]]; do
@@ -31,6 +41,11 @@ while [[ "${EXIT}" != "true" ]]; do
 	if [[ "${USESMS}" == "TRUE" ]]; then
 		debugprint "USESMS is ${USESMS}"
 		./tty-sms-fetch.sh "${1}"
+	fi
+
+	# Check for ITTY
+	if [[ "${USEITTY}" == 'TRUE' ]]; then
+		./tty-itty-receive.sh "${1}"
 	fi
 
 	# Check for TCP

@@ -6,6 +6,7 @@ TTYNAME="${1}"
 
 # Get PIDs
 #LOOPLISTENER=$(cat /dev/shm/"${TTYNAME}"-looplistener.pid)
+FLDIGI=$(cat /dev/shm/"${TTYNAME}"-itty-main.pid)
 SWITCHBOARD=$(cat /dev/shm/"${TTYNAME}"-switchboard.pid)
 MAIN=$(cat /dev/shm/"${TTYNAME}"-main.pid)
 OTHERS=$(cat /dev/shm/"${TTYNAME}"-action.pid)
@@ -14,6 +15,9 @@ OTHERS=$(cat /dev/shm/"${TTYNAME}"-action.pid)
 #kill "${LOOPLISTENER}"
 #rm -f /dev/shm/tty-looplistener.pid
 #echo " Stopped."
+printf "Stopping fldigi process..."
+kill "${FLDIGI}"
+echo "Stopped."
 printf "Stopping switchboard loop..."
 kill "${SWITCHBOARD}"
 rm -f /dev/shm/tty-switchboard.pid
@@ -22,6 +26,10 @@ printf "Stopping main loop..."
 kill "${MAIN}"
 rm -f /dev/shm/tty-main.pid
 echo " Stopped."
+
+rm -f /dev/shm/*
+
+echo "Cleaned up tmp files."
 
 #printf "Stopping remaining TTY actions, if any..."
 #kill "${OTHERS}"

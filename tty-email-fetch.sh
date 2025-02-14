@@ -118,7 +118,7 @@ ttyinit
 
 # Ensure the machines on the loop are in the corrcet shift
 #printf "%s" "${FIGSCHAR}" > "${TTY}"
-bell 2
+bell "${EMAILBELL}"
 figs
 
 # Print message out on teletype

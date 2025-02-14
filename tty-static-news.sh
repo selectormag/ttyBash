@@ -3,10 +3,12 @@
 TTY='/dev/ttyACM2'
 
 function sflow () {
-        # Determine number of lines in given file
+         IFS=
+	 # Determine number of lines in given file
         NUMLINES=$(cat "${1}" | wc -l)
         # Process each line, one at a time
-        LINENUM=1
+        printf "\n" > "${TTY}"
+	LINENUM=1
         while [[ ${LINENUM} -le ${NUMLINES} ]]; do
                 # Get line
                 LINE=$(tail -n+"${LINENUM}" "${1}" | head -n1 | sed 's/%/ percent/g; s/\+/ plus/g; s/\@/ at /g; s/\*//g; s/=//g')
@@ -25,30 +27,25 @@ function sflow () {
                 sleep "${WAITTIME}" # Wait approximate amount of time until sending next line so as to not overwhelm interface buffer; buffer seems to be able to hold 2.5 lines without ixon enabled, 6-8 lines with ixon enabled
                 ((LINENUM++))
         done
-	printf "\x02\x08" > "${TTY}"
 }
 
-FEEDCOUNT=1
-INTERVAL=60
-MAXFEED=5
+#FEEDCOUNT=1
+INTERVAL=75
+#MAXFEED=1
+cp gulf.list gulf.queue
 while true; do
-	if [[ "${FEEDCOUNT}" -eq 1 ]]; then
-		# Print latest weather report
-		OUTPUT=$(./tty-weather.sh)
-	else
-       		# Pull the oldest item from the top of the queue
-       		OUTPUT=$(cat rss.queue | sed '/^$/q' | sed 's/Title: //g; s/Description: //g')
-	fi
-	printf "%s" "${OUTPUT}"
-       	printf "%s" "${OUTPUT}" | fmt -usw 80 > /dev/shm/ita2.tmp
+       	# Pull the oldest item from the top of the queue
+       	OUTPUT=$(cat gulf.queue | sed '/^$/q' | sed 's/Title: //g; s/Description: //g')
+	echo "${OUTPUT}"
+       	printf "%s" "${OUTPUT}" | fmt -usw 70 > /dev/shm/ita2.tmp
 	sflow /dev/shm/ita2.tmp
-	if [[ "${FEEDCOUNT}" -ne 1 ]]; then
-       		sed -i '0,/^$/d' rss.queue
-       		sed -i '1{/^$/d}' rss.queue
-	fi
-       	((FEEDCOUNT++))
-       	if [[ "${FEEDCOUNT}" -ge "${MAXFEED}" ]]; then
-	      FEEDCOUNT=1
-       	fi
+#	if [[ "${FEEDCOUNT}" -ne 1 ]]; then
+       		sed -i '0,/^$/d' gulf.queue
+       		sed -i '1{/^$/d}' gulf.queue
+#	fi
+#       	((FEEDCOUNT++))
+#       	if [[ "${FEEDCOUNT}" -ge "${MAXFEED}" ]]; then
+#	      FEEDCOUNT=1
+#       	fi
        sleep "${INTERVAL}"
 done
